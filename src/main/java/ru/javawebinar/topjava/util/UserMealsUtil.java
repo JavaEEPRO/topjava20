@@ -3,12 +3,11 @@ package ru.javawebinar.topjava.util;
 import ru.javawebinar.topjava.model.UserMeal;
 import ru.javawebinar.topjava.model.UserMealWithExcess;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.Month;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
+import java.util.*;
 
 public class UserMealsUtil {
     public static void main(String[] args) {
@@ -29,11 +28,22 @@ public class UserMealsUtil {
     }
 
     public static List<UserMealWithExcess> filteredByCycles(List<UserMeal> meals, LocalTime startTime, LocalTime endTime, int caloriesPerDay) {
-        List<UserMealWithExcess> res = new ArrayList<>(meals.size()); // TODO return filtered list with excess. Implement by cycles
+        final List<UserMealWithExcess> res = new ArrayList<>(meals.size()); // TODO return filtered list with excess. Implement by cycles
+        final Map<LocalDate, Integer> caloriesMappedByDay = new HashMap<>();
         for( UserMeal userMeal : meals ) {
-            
+            caloriesMappedByDay.merge(userMeal.getDateTime().toLocalDate(), userMeal.getCalories(), Integer::sum);
         }
-
+        for (UserMeal userMeal : meals) {
+            if (TimeUtil.isBetweenHalfOpen(userMeal.getDateTime().toLocalTime(), startTime, endTime)) {
+                res.add(new UserMealWithExcess(userMeal.getDateTime(), userMeal.getDescription(), userMeal.getCalories(), caloriesMappedByDay.get(userMeal.getDateTime().toLocalDate()) > caloriesPerDay));
+            }
+        }
+//        meals.forEach(meal -> caloriesMappedByDay.merge(meal.getDateTime().toLocalDate(), meal.getCalories(), Integer::sum));
+//        meals.forEach(meal -> {
+//            if (TimeUtil.isBetweenHalfOpen(meal.getDateTime().toLocalTime(), startTime, endTime)) {
+//                res.add(new UserMealWithExcess(meal.getDateTime(), meal.getDescription(), meal.getCalories(), caloriesMappedByDay.get(meal.getDateTime().toLocalDate()) > caloriesPerDay));
+//            }
+//        });
         return res;
     }
 
@@ -42,3 +52,25 @@ public class UserMealsUtil {
         return null;
     }
 }
+
+
+
+/*
+*     найгарнішій дівчинці в світі
+*   личить тільки всміхатись і сяяти
+*     і ніколи нічим не печалитись,
+*    але завжди щасливій світитись,
+*   і від щастя, мов пташці, співати!
+*
+*   хай Твій кожний крок буде вдалий,
+*     наче пісні прекрасної такти
+* (все-привсе щоб легенько вспівала Ти)
+*     погляд Твоїх очей досконалий
+*     сильний світ на краще міняти!
+*
+*      наймиліша дівчинка в світі,
+*     усім серцем до Тебе я лину -
+*      подаруй мені посмішку щиру,
+*     щоб мені теж з Тобою радіти:
+*    Я з Тобою мов на крилах орлиних :*
+* */
