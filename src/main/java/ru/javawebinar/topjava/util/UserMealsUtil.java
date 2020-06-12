@@ -7,7 +7,10 @@ import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.Month;
 import java.util.*;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
+
+import static java.util.stream.Collectors.toList;
 
 public class UserMealsUtil {
     public static void main(String[] args) {
@@ -25,6 +28,7 @@ public class UserMealsUtil {
         mealsTo.forEach(System.out::println);
 
        System.out.println(filteredByStreams(meals, LocalTime.of(7, 0), LocalTime.of(12, 0), 2000));
+        System.out.println(filteredByStreams(meals, 2000, timeFrameFilter(LocalTime.of(7, 0), LocalTime.of(12, 0))));
     }
 
     public static List<UserMealWithExcess> filteredByCycles(List<UserMeal> meals, LocalTime startTime, LocalTime endTime, int caloriesPerDay) {
@@ -74,16 +78,32 @@ public class UserMealsUtil {
         return res;
     }
 
+    private static List<UserMealWithExcess> filteredByStreams(Collection<UserMeal> meals, int caloriesPerDay, Predicate<UserMeal> filter) {
+        Map<LocalDate, Integer> caloriesSumByDate =
+                meals.stream()
+                 .collect(
+                        Collectors.groupingBy(UserMeal::getLocalDate, Collectors.summingInt(UserMeal::getCalories)));
+
+
+        return meals.stream()
+                .filter(filter)
+                .map(meal -> createWithExceed(meal, caloriesSumByDate.get(meal.getDateTime().toLocalDate()) > caloriesPerDay))
+                .collect(toList());
+    }
+
+    private static Predicate<UserMeal> timeFrameFilter(LocalTime startTime, LocalTime endTime) {
+        return userMeal -> TimeUtil.isBetweenHalfOpen(userMeal.getDateTime().toLocalTime(), startTime, endTime);
+    }
+
     private static UserMealWithExcess createWithExceed(UserMeal meal, boolean exceeded) {
         return new UserMealWithExcess(meal.getDateTime(), meal.getDescription(), meal.getCalories(), exceeded);
     }
 
     public static int caloriesPerDate(LocalDateTime dateTime) {
         LocalDate date = dateTime.toLocalDate();
-        int res = caloriesPerMealsMap.entrySet().stream()
+        return caloriesPerMealsMap.entrySet().stream()
                 .filter(currentMap -> (currentMap.getKey().toLocalDate().isEqual(date)))
-                .mapToInt(currentMap -> currentMap.getValue()).sum();
-        return res;
+                .mapToInt(Map.Entry::getValue).sum();
     }
 }
 
