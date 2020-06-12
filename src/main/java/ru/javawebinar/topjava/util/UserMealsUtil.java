@@ -2,12 +2,12 @@ package ru.javawebinar.topjava.util;
 
 import ru.javawebinar.topjava.model.UserMeal;
 import ru.javawebinar.topjava.model.UserMealWithExcess;
-
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.Month;
 import java.util.*;
+import java.util.stream.Collectors;
 
 public class UserMealsUtil {
     public static void main(String[] args) {
@@ -47,9 +47,43 @@ public class UserMealsUtil {
         return res;
     }
 
+    static Map<LocalDateTime, Integer> caloriesPerMealsMap = new HashMap<>();
+
     public static List<UserMealWithExcess> filteredByStreams(List<UserMeal> meals, LocalTime startTime, LocalTime endTime, int caloriesPerDay) {
-        // TODO Implement by streams
-        return null;
+        List<UserMealWithExcess> res = new ArrayList<>();// TODO Implement by streams
+
+        meals
+                .stream()
+                .forEach((meal) -> caloriesPerMealsMap.put(meal.getDateTime(), meal.getCalories()));
+
+        Map<LocalDateTime, UserMeal> filteredMap =
+        meals
+                .stream()
+                .filter(meal -> TimeUtil.isBetweenHalfOpen(meal.getDateTime().toLocalTime(), startTime, endTime))
+                .collect(Collectors.toMap(UserMeal::getDateTime, (meal) -> meal));
+
+        filteredMap
+                .forEach((localDate, userMeal)->
+                {
+                    boolean currentExceeded = false;
+                    if(caloriesPerDate(localDate) > caloriesPerDay) {
+                        currentExceeded = true;
+                    }
+                    res.add(createWithExceed(userMeal, currentExceeded));
+                });
+        return res;
+    }
+
+    private static UserMealWithExcess createWithExceed(UserMeal meal, boolean exceeded) {
+        return new UserMealWithExcess(meal.getDateTime(), meal.getDescription(), meal.getCalories(), exceeded);
+    }
+
+    public static int caloriesPerDate(LocalDateTime dateTime) {
+        LocalDate date = dateTime.toLocalDate();
+        int res = caloriesPerMealsMap.entrySet().stream()
+                .filter(currentMap -> (currentMap.getKey().toLocalDate().isEqual(date)))
+                .mapToInt(currentMap -> currentMap.getValue()).sum();
+        return res;
     }
 }
 
