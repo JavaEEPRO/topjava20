@@ -91,7 +91,7 @@ public class UserMealsUtil {
                     if(caloriesPerDate(localDate) > caloriesPerDay) {
                         currentExcess = true;
                     }
-                    res.add(createWithExceed(userMeal, currentExcess));
+                    res.add(createWithExcess(userMeal, currentExcess));
                 });
         return res;
     }
@@ -105,7 +105,7 @@ public class UserMealsUtil {
 
         return meals.stream()
                 .filter(filter)
-                .map(meal -> createWithExceed(meal, caloriesSumByDate.get(meal.getDateTime().toLocalDate()) > caloriesPerDay))
+                .map(meal -> createWithExcess(meal, caloriesSumByDate.get(meal.getDateTime().toLocalDate()) > caloriesPerDay))
                 .collect(toList());
     }
 
@@ -113,8 +113,8 @@ public class UserMealsUtil {
         return userMeal -> TimeUtil.isBetweenHalfOpen(userMeal.getDateTime().toLocalTime(), startTime, endTime);
     }
 
-    private static UserMealWithExcess createWithExceed(UserMeal meal, boolean exceeded) {
-        return new UserMealWithExcess(meal.getDateTime(), meal.getDescription(), meal.getCalories(), exceeded);
+    private static UserMealWithExcess createWithExcess(UserMeal meal, boolean excess) {
+        return new UserMealWithExcess(meal.getDateTime(), meal.getDescription(), meal.getCalories(), excess);
     }
 
     public static int caloriesPerDate(LocalDateTime dateTime) {
