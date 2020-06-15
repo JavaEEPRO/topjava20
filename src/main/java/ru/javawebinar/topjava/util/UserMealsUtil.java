@@ -69,11 +69,11 @@ public class UserMealsUtil {
         filteredMap
                 .forEach((localDate, userMeal)->
                 {
-                    boolean currentExceeded = false;
+                    boolean currentExcess = false;
                     if(caloriesPerDate(localDate) > caloriesPerDay) {
-                        currentExceeded = true;
+                        currentExcess = true;
                     }
-                    res.add(createWithExceed(userMeal, currentExceeded));
+                    res.add(createWithExceed(userMeal, currentExcess));
                 });
         return res;
     }
