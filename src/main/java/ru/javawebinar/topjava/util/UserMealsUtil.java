@@ -1,6 +1,5 @@
 package ru.javawebinar.topjava.util;
 
-import org.w3c.dom.ls.LSOutput;
 import ru.javawebinar.topjava.model.UserMeal;
 import ru.javawebinar.topjava.model.UserMealWithExcess;
 import java.time.LocalDate;
@@ -8,9 +7,9 @@ import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.Month;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
-
 import static java.util.stream.Collectors.toList;
 
 public class UserMealsUtil {
@@ -45,6 +44,10 @@ public class UserMealsUtil {
 
         System.out.println("\nresult of filteredByRecursiveHeadcutting with O(n) time complexity:\n");
         filteredByRecursiveHeadcutting(meals, LocalTime.of(7, 0), LocalTime.of(12, 0), 2000)
+                .forEach(System.out::println);
+
+        System.out.println("\nresult of filteredWithAtomicBoolean with O(n) time complexity:\n");
+        filteredWithAtomicBoolean(meals, LocalTime.of(7, 0), LocalTime.of(12, 0), 2000)
                 .forEach(System.out::println);
     }
 
@@ -120,6 +123,25 @@ public class UserMealsUtil {
         return res;
     }
 
+    public static List<UserMealWithExcess> filteredWithAtomicBoolean(List<UserMeal> meals, LocalTime startTime, LocalTime endTime, int caloriesPerDay) {
+        final Map<LocalDate, Integer> caloriesSumByDate = new HashMap<>();
+        final Map<LocalDate, AtomicBoolean> exceededByDate = new HashMap<>();
+
+        final List<UserMealWithExcess> mealsWithExcess = new ArrayList<>();
+
+        meals.forEach(meal -> {
+          AtomicBoolean wrapBoolean = exceededByDate.computeIfAbsent(meal.getDateTime().toLocalDate(), date -> new AtomicBoolean());
+          Integer dailyCalories = caloriesSumByDate.merge(meal.getLocalDate(), meal.getCalories(), Integer::sum);
+          if (dailyCalories > caloriesPerDay) {
+              wrapBoolean.set(true);
+          }
+          if (TimeUtil.isBetweenHalfOpen(meal.getDateTime().toLocalTime(), startTime, endTime)) {
+              mealsWithExcess.add(createWithExcess(meal, wrapBoolean));
+          }
+        });
+        return mealsWithExcess;
+    }
+
     private static List<UserMealWithExcess> filteredByStreams(Collection<UserMeal> meals, Predicate<UserMeal> filter, int caloriesPerDay) {
         Map<LocalDate, Integer> caloriesSumByDate =
                 meals.stream()
@@ -140,6 +162,10 @@ public class UserMealsUtil {
     }
 
     private static UserMealWithExcess createWithExcess(UserMeal meal, boolean excess) {
+        return new UserMealWithExcess(meal.getDateTime(), meal.getDescription(), meal.getCalories(), excess);
+    }
+
+    private static UserMealWithExcess createWithExcess(UserMeal meal, AtomicBoolean excess) {
         return new UserMealWithExcess(meal.getDateTime(), meal.getDescription(), meal.getCalories(), excess);
     }
 
