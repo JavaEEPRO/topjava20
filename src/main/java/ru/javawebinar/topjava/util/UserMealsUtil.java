@@ -24,11 +24,23 @@ public class UserMealsUtil {
                 new UserMeal(LocalDateTime.of(2020, Month.JANUARY, 31, 20, 0), "Ужин", 410)
         );
 
+        System.out.println("\nresult of old plain filteredByCycles, O(n):\n");
         List<UserMealWithExcess> mealsTo = filteredByCycles(meals, LocalTime.of(7, 0), LocalTime.of(12, 0), 2000);
-        mealsTo.forEach(System.out::println);
+        mealsTo
+                .forEach(System.out::println);   // call of old plain filteredByCycles (expected, that this solution'll process data faster than all others)
 
-       System.out.println(filteredByStreams(meals, LocalTime.of(7, 0), LocalTime.of(12, 0), 2000));
-        System.out.println(filteredByStreams(meals, timeFrameFilter(LocalTime.of(7, 0), LocalTime.of(12, 0)), 2000));
+        System.out.println("\nresult of filteredByEnhancedForCycles, O(n):\n");
+        filteredByEnhancedForCycles(meals, LocalTime.of(7, 0), LocalTime.of(12, 0), 2000);
+        mealsTo
+                .forEach(System.out::println);   // call of filteredByEnhancedForCycles
+
+        System.out.println("\nresult of filteredByStreams (NARROW PLACE) AS EXAMPLE of NEVER ARCHITECT AS THIS, has O(n^2) time complexity:\n");
+        filteredByStreams(meals, LocalTime.of(7, 0), LocalTime.of(12, 0), 2000)
+                .forEach(System.out::println); // call of filteredByStreams: old ugly filter edition - JUST AS EXAMPLE of NEVER DO THIS, to prevent similar mistakes of architecture with performance-non-friendly nested loops (has O(n^2) stigma over its face) going over list by stream API with extra looping at every step through secondary cache map, when called caloriesPerDate(LocalDateTime dateTime)
+
+        System.out.println("\nresult of filteredByStreams with O(n) time complexity:\n");
+        filteredByStreams(meals, timeFrameFilter(LocalTime.of(7, 0), LocalTime.of(12, 0)), 2000)
+                .forEach(meal -> System.out.println(meal.toString()));  // call of filteredByStreams with O(n) time complexity, beautiful short solution
     }
 
     public static List<UserMealWithExcess> filteredByCycles(List<UserMeal> meals, LocalTime startTime, LocalTime endTime, int caloriesPerDay) {
@@ -42,12 +54,18 @@ public class UserMealsUtil {
                 res.add(new UserMealWithExcess(userMeal.getDateTime(), userMeal.getDescription(), userMeal.getCalories(), caloriesMappedByDay.get(userMeal.getDateTime().toLocalDate()) > caloriesPerDay));
             }
         }
-//        meals.forEach(meal -> caloriesMappedByDay.merge(meal.getDateTime().toLocalDate(), meal.getCalories(), Integer::sum));
-//        meals.forEach(meal -> {
-//            if (TimeUtil.isBetweenHalfOpen(meal.getDateTime().toLocalTime(), startTime, endTime)) {
-//                res.add(new UserMealWithExcess(meal.getDateTime(), meal.getDescription(), meal.getCalories(), caloriesMappedByDay.get(meal.getDateTime().toLocalDate()) > caloriesPerDay));
-//            }
-//        });
+        return res;
+    }
+
+    public static List<UserMealWithExcess> filteredByEnhancedForCycles(List<UserMeal> meals, LocalTime startTime, LocalTime endTime, int caloriesPerDay) {
+        final List<UserMealWithExcess> res = new ArrayList<>(meals.size());
+        final Map<LocalDate, Integer> caloriesMappedByDay = new HashMap<>();
+        meals.forEach(meal -> caloriesMappedByDay.merge(meal.getDateTime().toLocalDate(), meal.getCalories(), Integer::sum));
+        meals.forEach(meal -> {
+            if (TimeUtil.isBetweenHalfOpen(meal.getDateTime().toLocalTime(), startTime, endTime)) {
+                res.add(new UserMealWithExcess(meal.getDateTime(), meal.getDescription(), meal.getCalories(), caloriesMappedByDay.get(meal.getDateTime().toLocalDate()) > caloriesPerDay));
+            }
+        });
         return res;
     }
 
