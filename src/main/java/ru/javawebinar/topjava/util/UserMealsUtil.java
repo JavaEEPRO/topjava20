@@ -2,6 +2,9 @@ package ru.javawebinar.topjava.util;
 
 import ru.javawebinar.topjava.model.UserMeal;
 import ru.javawebinar.topjava.model.UserMealWithExcess;
+import ru.javawebinar.topjava.model.UserMealWithExcessForReflectiveCall;
+
+import java.lang.reflect.Field;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
@@ -13,7 +16,7 @@ import java.util.stream.Collectors;
 import static java.util.stream.Collectors.toList;
 
 public class UserMealsUtil {
-    public static void main(String[] args) {
+    public static void main(String[] args) throws NoSuchFieldException {
         List<UserMeal> meals = Arrays.asList(
                 new UserMeal(LocalDateTime.of(2020, Month.JANUARY, 30, 10, 0), "Завтрак", 500),
                 new UserMeal(LocalDateTime.of(2020, Month.JANUARY, 30, 13, 0), "Обед", 1000),
@@ -48,6 +51,10 @@ public class UserMealsUtil {
 
         System.out.println("\nresult of filteredWithAtomicBoolean with O(n) time complexity:\n");
         filteredWithAtomicBoolean(meals, LocalTime.of(7, 0), LocalTime.of(12, 0), 2000)
+                .forEach(System.out::println);
+
+        System.out.println("\nresult of filteredWithBooleanThroughReflection with O(n) time complexity:\n");
+        filteredWithBooleanThroughReflection(meals, LocalTime.of(7, 0), LocalTime.of(12, 0), 2000)
                 .forEach(System.out::println);
     }
 
@@ -138,6 +145,36 @@ public class UserMealsUtil {
           if (TimeUtil.isBetweenHalfOpen(meal.getDateTime().toLocalTime(), startTime, endTime)) {
               mealsWithExcess.add(createWithExcess(meal, wrapBoolean));
           }
+        });
+        return mealsWithExcess;
+    }
+
+    public static List<UserMealWithExcessForReflectiveCall> filteredWithBooleanThroughReflection(List<UserMeal> meals, LocalTime startTime, LocalTime endTime, int caloriesPerDay) throws NoSuchFieldException {
+        final Map<LocalDate, Integer> caloriesSumByDate = new HashMap<>();
+        final Map<LocalDate, Boolean> exceededByDate = new HashMap<>();
+        Field field = Boolean.class.getDeclaredField("value");
+        field.setAccessible(true);
+
+        final List<UserMealWithExcessForReflectiveCall> mealsWithExcess = new ArrayList<>();
+
+        meals.forEach(meal -> {
+            Boolean mutableBoolean = exceededByDate.computeIfAbsent(meal.getDateTime().toLocalDate(), date -> new Boolean(false));
+            Integer dailyCalories = caloriesSumByDate.merge(meal.getDateTime().toLocalDate(), meal.getCalories(), Integer::sum);
+            if (dailyCalories > caloriesPerDay) {
+                try {
+                    field.setBoolean(mutableBoolean, true);
+                    
+                } catch (IllegalAccessException e) {
+                    e.printStackTrace();
+                }
+            }
+
+            if (TimeUtil.isBetweenHalfOpen(meal.getDateTime().toLocalTime(), startTime, endTime)) {
+                mealsWithExcess.add(new UserMealWithExcessForReflectiveCall(meal.getDateTime(),
+                                                                            meal.getDescription(),
+                                                                            meal.getCalories(),
+                                                                            mutableBoolean));
+            }
         });
         return mealsWithExcess;
     }
