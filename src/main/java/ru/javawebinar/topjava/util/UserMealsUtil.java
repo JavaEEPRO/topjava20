@@ -49,6 +49,10 @@ public class UserMealsUtil {
         filteredByRecursiveHeadcutting(meals, LocalTime.of(7, 0), LocalTime.of(12, 0), 2000)
                 .forEach(System.out::println);
 
+        System.out.println("\nresult of filteredByRecursionThreadSafe with O(n) time complexity:\n");
+        filteredByRecursionThreadSafe(meals, LocalTime.of(7, 0), LocalTime.of(12, 0), 2000)
+                .forEach(System.out::println);
+
         System.out.println("\nresult of filteredWithAtomicBoolean with O(n) time complexity:\n");
         filteredWithAtomicBoolean(meals, LocalTime.of(7, 0), LocalTime.of(12, 0), 2000)
                 .forEach(System.out::println);
@@ -140,6 +144,31 @@ public class UserMealsUtil {
                     !(caloriesMappedByDay.get(meals.get(0).getDateTime().toLocalDate()) <= caloriesPerDay)));
         }
         return res;
+    }
+
+    public static List<UserMealWithExcess> filteredByRecursionThreadSafe(List<UserMeal> meals, LocalTime startTime, LocalTime endTime, int caloriesPerDay) {
+        ArrayList<UserMealWithExcess> res = new ArrayList<>();
+        filterWithRecursionThreadSafe(new LinkedList<>(meals), startTime, endTime, caloriesPerDay, new HashMap<>(), res);
+        return res;
+    }
+
+    public static void filterWithRecursionThreadSafe(LinkedList<UserMeal> meals, LocalTime startTime, LocalTime endTime, int caloriesPerDay, Map<LocalDate, Integer> dailyCaloriesMap, List<UserMealWithExcess> res) {
+        if(meals.isEmpty()) return;
+        UserMeal userMeal = meals.pop();
+        dailyCaloriesMap.merge(userMeal.getLocalDate(),
+                               userMeal.getCalories(),
+                               Integer::sum);
+        filterWithRecursionThreadSafe(meals,
+                                      startTime,
+                                      endTime,
+                                      caloriesPerDay,
+                                      dailyCaloriesMap,
+                                      res);
+        if (TimeUtil.isBetweenHalfOpen(userMeal.getDateTime().toLocalTime(),
+                                       startTime,
+                                       endTime)) {
+            res.add(createWithExcess(userMeal,dailyCaloriesMap.get(userMeal.getLocalDate()) > caloriesPerDay));
+        }
     }
 
     public static List<UserMealWithExcess> filteredWithAtomicBoolean(List<UserMeal> meals, LocalTime startTime, LocalTime endTime, int caloriesPerDay) {
