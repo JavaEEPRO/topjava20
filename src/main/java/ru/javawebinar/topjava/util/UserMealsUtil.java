@@ -115,7 +115,7 @@ public class UserMealsUtil {
         return res;
     }
 
-    private static List<UserMealWithExcess> filteredByStreams(Collection<UserMeal> meals, Predicate<UserMeal> filter, int caloriesPerDay) {
+    public static List<UserMealWithExcess> filteredByStreams(Collection<UserMeal> meals, Predicate<UserMeal> filter, int caloriesPerDay) {
         Map<LocalDate, Integer> caloriesSumByDate =
                 meals.stream()
                         .collect(
